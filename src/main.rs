@@ -21,12 +21,10 @@ fn main() {
             #version 140
             in vec2 position;
 
-            uniform float t;
+            uniform mat4 matrix;
 
             void main () {
-                vec2 pos = position;
-                pos.x += t;
-                gl_Position = vec4(pos, 0.0, 1.0);
+                gl_Position = matrix * vec4(position, 0.0, 1.0);
             }
         "#;
     let fragment_shader_src = r#"
@@ -53,7 +51,7 @@ fn main() {
     let shape = vec![vertex1, vertex2, vertex3];
     let vertex_buffer = glium::VertexBuffer::new(&display, &shape).unwrap();
 
-    let mut t: f32 = -0.5;
+    let mut t: f32 = 0.0;
     event_loop.run(move |event, _, control_flow| {
         match event {
             glutin::event::Event::WindowEvent { event, .. } => match event {
@@ -76,9 +74,16 @@ fn main() {
         *control_flow = glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
 
         t += 0.002;
-        if t > 0.5 {
-            t = -0.5;
-        }
+        t %= 3.1415926 * 2.0;
+
+        let uniforms = uniform! {
+            matrix: [
+                [t.cos(), t.sin(), 0.0, 0.0],
+                [-t.sin(), t.cos(), 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0 ,1.0]
+            ]
+        };
 
         let mut target = display.draw();
         target.clear_color(0.0, 0.0, 0.0, 1.0);
@@ -87,7 +92,7 @@ fn main() {
                 &vertex_buffer,
                 &indices,
                 &program,
-                &glium::uniform! {t: t},
+                &uniforms,
                 &Default::default(),
             )
             .unwrap();
