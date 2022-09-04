@@ -16,7 +16,7 @@ fn main() {
 
     let mut event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
-    let cb = glutin::ContextBuilder::new();
+    let cb = glutin::ContextBuilder::new().with_depth_buffer(24);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
     let positions = glium::VertexBuffer::new(&display, &teapot::VERTICES).unwrap();
@@ -94,7 +94,16 @@ fn main() {
         };
 
         let mut target = display.draw();
-        target.clear_color(0.0, 0.0, 0.0, 1.0);
+        target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
+
+        let params = glium::DrawParameters {
+            depth: glium::Depth {
+                test: glium::draw_parameters::DepthTest::IfLess,
+                write: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
 
         target
             .draw(
@@ -102,7 +111,7 @@ fn main() {
                 &indices,
                 &program,
                 &uniforms,
-                &Default::default(),
+                &params,
             )
             .unwrap();
         target.finish().unwrap();
