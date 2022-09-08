@@ -1,6 +1,9 @@
+#[derive(Copy, Clone)]
 pub struct Vertex {
     position: (f32, f32, f32),
 }
+
+implement_vertex!(Vertex, position);
 
 pub fn cube_mesh(center: &[f32; 3]) -> (Vec<Vertex>, Vec<u16>) {
     let a1 = Vertex {

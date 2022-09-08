@@ -8,10 +8,9 @@ mod teapot;
 #[derive(Copy, Clone)]
 struct Vertex {
     position: [f32; 2],
-    tex_coords: [f32; 2],
 }
 
-implement_vertex!(Vertex, position, tex_coords);
+implement_vertex!(Vertex, position);
 
 fn main() {
     use glium::{glutin, Surface};
@@ -22,9 +21,9 @@ fn main() {
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
     let (vertices, indices) = cube::cube_mesh(&[0.0, 0.0, 0.0f32]);
-    let _vectices = vertices.as_slice();
+    let _vectices = vertices.as_slice() as &[cube::Vertex];
 
-    let positions = glium::VertexBuffer::new(&display, _vectices).unwrap();
+    let positions = glium::VertexBuffer::new(&display, &vertices).unwrap();
     let indices = glium::IndexBuffer::new(
         &display,
         glium::index::PrimitiveType::TrianglesList,
@@ -52,12 +51,15 @@ fn main() {
             out vec4 color;
 
             void main() {
-                color = vec4(1.0, 0.0, 0.0, 1.0);
+                color = vec4(1.0, 1.0, 0.5, 1.0);
             }
         "#;
     let program =
         glium::Program::from_source(&display, vertex_shader_src, fragment_shader_src, None)
             .unwrap();
+
+    let mut camera = camera::Camera::new([2.0, -1.0, 1.0], [-2.0, 1.0, 1.0], [0.0, 1.0, 0.0]);
+    camera.update_matrix();
 
     event_loop.run(move |event, _, control_flow| {
         let next_frame_time =
@@ -79,6 +81,9 @@ fn main() {
             },
             _ => return,
         }
+
+        camera.move_backward(0.01);
+        camera.update_matrix();
 
         let mut target = display.draw();
         target.clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
@@ -102,16 +107,15 @@ fn main() {
         };
 
         let light = [1.0, 0.4, 0.9f32];
-        let view = camera::view_matrix(&[2.0, -1.0, 1.0], &[-2.0, 1.0, 1.0], &[0.0, 1.0, 0.0]);
         let uniforms = uniform! {
             model: [
-                [0.01, 0.0, 0.0, 0.0],
-                [0.0, 0.01, 0.0, 0.0],
-                [0.0, 0.0,  0.01,0.0],
-                [0.0, 0.0,  2.0,   1.0f32]
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 2.0, 1.0f32]
             ],
             prespective: perspective,
-            view: view,
+            view: camera.matrix.clone(),
             u_light: light
         };
 
